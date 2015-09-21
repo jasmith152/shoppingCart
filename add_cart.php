@@ -11,10 +11,12 @@ if(isset($_GET['pid']) && is_numeric($_GET['pid'])){
             <a href="view_cart.php"><input type="button" name="view_cart" value="View Cart" /></a>
         </p>';
     }else{
-        require_once ('mysqli_connect.php');
-        $sql = "SELECT price FROM prints WHERE prints.print_id = $pid";
+        $sql = "SELECT price FROM prints WHERE prints.print_id = :print_id";
+        $sql_params = array(
+            ':print_id' => $pid
+        );
         $conn = connection();
-        $results = returnResults($conn,$sql);
+        $results = returnResults($conn,$sql,$sql_params);
         if(is_array($results)){
             $_SESSION['cart'][$pid] = array(
                 'quantity' => 1, 
@@ -25,11 +27,10 @@ if(isset($_GET['pid']) && is_numeric($_GET['pid'])){
             <a href="view_cart.php"><input type="button" name="view_cart" value="View Cart" /></a>
             </p>';
         }else{
-            echo "<div align=\"center\">{$results}</div>";
+            echo '<div align="center">'.$results.'</div>';
         }
     }
 }else{
     echo '<div align="center">This page has been accessed in error!</div>';
 }
-//echo '<pre>';print_r($_SESSION);
 include ('includes/footer.php');

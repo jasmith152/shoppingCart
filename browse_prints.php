@@ -3,16 +3,22 @@ $page_title = 'Browse the Prints';
 include ('includes/header.php');
 include ('includes/helperFunctions.php'); 
 $sql = "SELECT prints.*,artists.artists_id,CONCAT_WS(' ', first_name, middle_name, last_name) AS artist FROM prints AS prints
-        JOIN artists ON prints.artist_id = artists.artists_id WHERE prints.available = 1 ORDER BY prints.print_id ASC ";
+        JOIN artists ON prints.artist_id = artists.artists_id WHERE prints.available = :available ORDER BY prints.print_id ASC ";
+$sql_params = array(
+    ':available' => 1
+);
 if(isset($_GET['aid']) && is_numeric($_GET['aid'])){
-    $aid = (int) $_GET['aid'];
+    $aid = (int)$_GET['aid'];
     if ($aid > 0) {
         $sql = "SELECT prints.*,artists.artists_id,CONCAT_WS(' ', first_name, middle_name, last_name) AS artist FROM prints AS prints
-                JOIN artists ON prints.artist_id = artists.artists_id WHERE prints.available = 1 AND artists.artists_id = $aid ORDER BY prints.print_id ASC ";	
+                JOIN artists ON prints.artist_id = artists.artists_id WHERE prints.available = 1 AND artists.artists_id = :artists_id ORDER BY prints.print_id ASC ";	
+        $sql_params = array(
+            ':artists_id' => $aid
+        );
     }
 }
-$conn = connection();
-$results = returnResults($conn,$sql);
+$conn = connection(); 
+$results = returnResults($conn,$sql,$sql_params);
 if(is_array($results)){
     echo '<table border="0" width="90%" cellspacing="3" cellpadding="3" align="center">
         <tr>
@@ -24,7 +30,7 @@ if(is_array($results)){
         </tr>';
     foreach($results as $row){
         echo "\t<tr>
-            <td align=\"left\"><a href=\"browse_prints.php?aid={$row['artist_id']}\">{$row['artist']}</a></td>
+            <td align=\"left\"><a class='btn btn-default' href=\"browse_prints.php?aid={$row['artist_id']}\">{$row['artist']}</a></td>
             <td align=\"left\"><a href=\"view_print.php?pid={$row['print_id']}\">{$row['print_name']}<br>";
             $image = getImage($row['file_path']);
             echo "<img src=\"{$image}\" alt=\"{$row['print_name']}\" height=\"42\" width=\"42\"/>";
