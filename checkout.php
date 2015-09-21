@@ -40,7 +40,7 @@ if(is_numeric($results)){
 		$message = '<p>Thank you for your order. You will be notified when the items ship.</p>';
         echo $message;
 		// Send emails and do whatever else.	
-	}else{ // Rollback and report the problem.	
+	}else{
 		$conn->rollBack();		
 		$message = '<p>Your order could not be processed due to a system error. You will be contacted in order to have the problem fixed. We apologize for the inconvenience.</p>';
 		// Send the order information to the administrator.	
