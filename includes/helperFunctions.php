@@ -4,7 +4,7 @@ if(session_status() == PHP_SESSION_NONE){
 }
 function connection(){
     try{
-        $results = new PDO();
+        $results = new PDO("mysql:host=localhost;dbname=shopping_cart","johnny","Question1521");
         $results->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION); 
         $results->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
         header('Content-Type: text/html; charset=utf-8'); 
@@ -47,9 +47,7 @@ function getImage($name){
     }
     return $image;
 }
-if(isset($_POST['create_account_submit'])){
-    $conn = connection();
-    
+function validate_form(){
     $post = array(
         'first_name' => filter_var($_POST['first_name'], FILTER_SANITIZE_STRING),
         'last_name' => filter_var($_POST['last_name'], FILTER_SANITIZE_STRING),
@@ -62,7 +60,9 @@ if(isset($_POST['create_account_submit'])){
     foreach($post as $row => $value){
         $value = filter_var($value, FILTER_FLAG_STRIP_LOW,FILTER_FLAG_STRIP_HIGH);
     }
-    
+    return $post;
+}
+function error_check($post){
     if(empty($post['password'])){$error['password'] = "Please enter a password.";}
     if(!filter_var($post['email'], FILTER_VALIDATE_EMAIL)){$error['email'] = "Invalid E-Mail Address";}
     $sql = "SELECT 1 FROM customers WHERE email = :email";
@@ -77,7 +77,12 @@ if(isset($_POST['create_account_submit'])){
         echo '<Pre>';print_r($_SESSION);print_r($error);exit;
         //header("Location: register.php");
     }
-    
+}
+
+if(isset($_POST['create_account_submit'])){
+    $conn = connection();
+    $post = validate_form();
+    error_check($post);    
     $sql = "INSERT INTO customers(first_name, last_name, email, password, salt) 
            VALUES (:first_name,:last_name,:email,:password,:salt)";
     $salt = dechex(mt_rand(0, 2147483647)) . dechex(mt_rand(0, 2147483647));
@@ -104,6 +109,7 @@ if(isset($_POST['create_account_submit'])){
         header("Location: ../register.php");
     }
 }
+
 if(isset($_POST['sign_in_submit'])){
     $conn = connection();
     $email = filter_var($_POST['email'], FILTER_SANITIZE_EMAIL);
@@ -141,6 +147,7 @@ if(isset($_POST['sign_in_submit'])){
         header("Location: ../sign_in.php");
     }
 }
+
 if(isset($_GET['sign_out_submit'])){
     unset($_SESSION);
     session_destroy();

@@ -1,71 +1,53 @@
 <?php 
+if(session_status() == PHP_SESSION_NONE){
+    session_start();
+}
 $page_title = 'Order Confirmation';
 include ('includes/header.php');
 include ('includes/helperFunctions.php');
-echo '<pre>';print_r($_SESSION);exit;
-//$customer = ; 
-//$total = ;
+$customer = $_SESSION['user']['customer_id']; 
+$total = $_SESSION['order_total'];    
+$print_ids = '';
+$quantity = '';
+foreach ($_SESSION['cart'] as $pid => $value) {
+    $print_ids .= $pid . ',';
+    $quantity .= $value['quantity']  . ',';
+}
+$print_ids = trim(substr($print_ids, 0, -1));
+$quantity = trim(substr($quantity, 0, -1));
 $conn = connection();
 $sql = "INSERT INTO orders (customer_id, total) VALUES (:customer, :total)";
-$results = insertOrders($conn,$sql,$customer,$total);
-echo '<pre>';print_r($results);exit;
-if (mysqli_affected_rows($dbc) == 1) {
-
-	// Need the order ID:
-	$oid = mysqli_insert_id($dbc);
-	
-	// Insert the specific order contents into the database...
-	
-	// Prepare the query:
-	$q = "INSERT INTO order_contents (order_id, print_id, quantity, price) VALUES (?, ?, ?, ?)";
-	$stmt = mysqli_prepare($dbc, $q);
-	mysqli_stmt_bind_param($stmt, 'iiid', $oid, $pid, $qty, $price);
-	
-	// Execute each query, count the total affected:
-	$affected = 0;
-	foreach ($_SESSION['cart'] as $pid => $item) {
-		$qty = $item['quantity'];
-		$price = $item['price'];
-		mysqli_stmt_execute($stmt);
-		$affected += mysqli_stmt_affected_rows($stmt);
-	}
-
-	// Close this prepared statement:
-	mysqli_stmt_close($stmt);
-
-	// Report on the success....
-	if ($affected == count($_SESSION['cart'])) { // Whohoo!
-	
-		// Commit the transaction:
-		mysqli_commit($dbc);
-		
-		// Clear the cart.
+$sql_params = array(
+    ':customer' => $customer,
+    ':total' => $total
+); 
+$results = insertContent($conn,$sql,$sql_params);
+if(is_numeric($results)){	
+    $conn->beginTransaction();
+	$sql = "INSERT INTO order_content (order_id, print_id, quantity, price, customer_id)
+         VALUES (:order_id, :print_id, :quantity, :price, :customer_id)";
+	$sql_params = array(
+        ':order_id' => rand(0, 1000000),
+        ':print_id' => json_encode($print_ids),
+        ':quantity' => json_encode($quantity),
+        ':price' => $total,
+        ':customer_id' => $_SESSION['user']['customer_id']
+    );
+    $results = insertContent($conn,$sql,$sql_params);
+	if(is_numeric($results)){
+		$conn->commit();
 		unset($_SESSION['cart']);
-		
-		// Message to the customer:
-		echo '<p>Thank you for your order. You will be notified when the items ship.</p>';
-		
-		// Send emails and do whatever else.
-	
-	} else { // Rollback and report the problem.
-	
-		mysqli_rollback($dbc);
-		
-		echo '<p>Your order could not be processed due to a system error. You will be contacted in order to have the problem fixed. We apologize for the inconvenience.</p>';
-		// Send the order information to the administrator.
-		
+		$message = '<p>Thank you for your order. You will be notified when the items ship.</p>';
+        echo $message;
+		// Send emails and do whatever else.	
+	}else{ // Rollback and report the problem.	
+		$conn->rollBack();		
+		$message = '<p>Your order could not be processed due to a system error. You will be contacted in order to have the problem fixed. We apologize for the inconvenience.</p>';
+		// Send the order information to the administrator.	
 	}
-
-} else { // Rollback and report the problem.
-
-	mysqli_rollback($dbc);
-
-	echo '<p>Your order could not be processed due to a system error. You will be contacted in order to have the problem fixed. We apologize for the inconvenience.</p>';
-	
+}else{
+	$conn->rollBack();
+	$message = '<p>Your order could not be processed due to a system error. You will be contacted in order to have the problem fixed. We apologize for the inconvenience.</p>';
 	// Send the order information to the administrator.
-	
 }
-
-mysqli_close($dbc);
-
 include ('includes/footer.php');

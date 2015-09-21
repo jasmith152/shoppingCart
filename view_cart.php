@@ -39,6 +39,7 @@ if(!empty($_SESSION['cart'])){
         foreach($results as $row){
             $subtotal = $_SESSION['cart'][$row['print_id']]['quantity'] * $_SESSION['cart'][$row['print_id']]['price'];
             $order_total += $subtotal;
+            $_SESSION['order_total'] = $order_total;
             echo '<tr>
             <td align="left">'.$row['artist'].'</td>
             <td align="left">'.$row['print_name'].'</td>
@@ -52,7 +53,7 @@ if(!empty($_SESSION['cart'])){
                 <td align="right">$'.number_format ($order_total, 2).'</td>
             </tr>';
         $tax = $order_total * .065;
-        $order_total = $order_total + $tax;
+        $order_total += $tax;
         echo '<tr>
                 <td colspan="4" align="right"><b>Tax:</b></td>
                 <td align="right">$'.number_format ($tax, 2).'</td>
